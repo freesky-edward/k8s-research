@@ -1,0 +1,23 @@
+@startuml
+interface DesiredStateOfWorldPopulator{
+Run(stopCh <-chan struct{})
+}
+
+class desiredStateOfWorldPopulator{
+-loopSleepDuration     time.Duration
+-podLister             corelisters.PodLister
+-desiredStateOfWorld   cache.DesiredStateOfWorld
+-volumePluginMgr       *volume.VolumePluginMgr
+-pvcLister             corelisters.PersistentVolumeClaimLister
+-pvLister              corelisters.PersistentVolumeLister
+-listPodsRetryDuration time.Duration
+-timeOfLastListPods    time.Time
++Run(stopCh <-chan struct{})
+-populatorLoopFunc() func()
+-findAndRemoveDeletedPods()
+-findAndAddActivePods()
+}
+
+desiredStateOfWorldPopulator -|> DesiredStateOfWorldPopulator
+
+desiredStateOfWorldPopulator ..> cache.DesiredStateOfWorld

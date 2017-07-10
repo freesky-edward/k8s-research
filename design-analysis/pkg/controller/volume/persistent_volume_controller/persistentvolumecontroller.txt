@@ -1,0 +1,84 @@
+@startuml
+
+class PersistentVolumeController{
+-volumeLister       corelisters.PersistentVolumeLister
+-volumeListerSynced cache.InformerSynced
+-claimLister        corelisters.PersistentVolumeClaimLister
+-claimListerSynced  cache.InformerSynced
+-classLister        storagelisters.StorageClassLister
+-classListerSynced  cache.InformerSynced
+-kubeClient                clientset.Interface
+-eventRecorder             record.EventRecorder
+-cloud                     cloudprovider.Interface
+-volumePluginMgr           vol.VolumePluginMgr
+-enableDynamicProvisioning bool
+-clusterName               string
+-volumes persistentVolumeOrderedIndex
+-claims  cache.Store
+-claimQueue  *workqueue.Type
+-volumeQueue *workqueue.Type
+-runningOperations goroutinemap.GoRoutineMap
+-preOperationHook func(operationName string)
+-createProvisionedPVRetryCount int
+-createProvisionedPVInterval   time.Duration
+
++syncClaim(claim *v1.PersistentVolumeClaim) error
++syncUnboundClaim(claim *v1.PersistentVolumeClaim) error
++syncBoundClaim(claim *v1.PersistentVolumeClaim) error
++syncVolume(volume *v1.PersistentVolume) error
++updateClaimStatus(claim *v1.PersistentVolumeClaim, phase v1.PersistentVolumeClaimPhase, volume *v1.PersistentVolume) (*v1.PersistentVolumeClaim, error)
++updateClaimStatusWithEvent(claim *v1.PersistentVolumeClaim, phase v1.PersistentVolumeClaimPhase, volume *v1.PersistentVolume, eventtype, reason, message string) (*v1.PersistentVolumeClaim, error)
++updateVolumePhase(volume *v1.PersistentVolume, phase v1.PersistentVolumePhase, message string) (*v1.PersistentVolume, error)
++updateVolumePhaseWithEvent(volume *v1.PersistentVolume, phase v1.PersistentVolumePhase, eventtype, reason, message string) (*v1.PersistentVolume, error)
++bindVolumeToClaim(volume *v1.PersistentVolume, claim *v1.PersistentVolumeClaim) (*v1.PersistentVolume, error)
++bindClaimToVolume(claim *v1.PersistentVolumeClaim, volume *v1.PersistentVolume) (*v1.PersistentVolumeClaim, error)
++bind(volume *v1.PersistentVolume, claim *v1.PersistentVolumeClaim) error
++unbindVolume(volume *v1.PersistentVolume) error
++reclaimVolume(volume *v1.PersistentVolume) error
++recycleVolumeOperation(arg interface{})
++deleteVolumeOperation(arg interface{}) error
++isVolumeReleased(volume *v1.PersistentVolume)
++doDeleteVolume(volume *v1.PersistentVolume) (bool, error)
++provisionClaim(claim *v1.PersistentVolumeClaim) error
++provisionClaimOperation(claimObj interface{})
+-getProvisionedVolumeNameForClaim(claim *v1.PersistentVolumeClaim) string
+-scheduleOperation(operationName string, operation func() error)
+-newRecyclerEventRecorder(volume *v1.PersistentVolume) vol.RecycleEventRecorder
+-findProvisionablePlugin(claim *v1.PersistentVolumeClaim) (vol.ProvisionableVolumePlugin, *storage.StorageClass, error)
+-findDeletablePlugin(volume *v1.PersistentVolume) (vol.DeletableVolumePlugin, error)
+
+-volumeWorker()
+-claimWorker()
+-setClaimProvisioner(claim *v1.PersistentVolumeClaim, class *storage.StorageClass) (*v1.PersistentVolumeClaim, error)
++Run(stopCh <-chan struct{})
+-deleteClaim(claim *v1.PersistentVolumeClaim)
+-updateClaim(claim *v1.PersistentVolumeClaim)
+-deleteVolume(volume *v1.PersistentVolume)
+-updateVolume(volume *v1.PersistentVolume)
+-storeClaimUpdate(claim interface{}) (bool, error)
+-storeVolumeUpdate(volume interface{}) (bool, error)
+-enqueueWork(queue workqueue.Interface, obj interface{})
+-initializeCaches(volumeLister corelisters.PersistentVolumeLister, claimLister corelisters.PersistentVolumeClaimLister)
+}
+
+class ControllerParameters{
+-KubeClient                clientset.Interface
+-SyncPeriod                time.Duration
+-VolumePlugins             []vol.VolumePlugin
+-Cloud                     cloudprovider.Interface
+-ClusterName               string
+-VolumeInformer            coreinformers.PersistentVolumeInformer
+-ClaimInformer             coreinformers.PersistentVolumeClaimInformer
+-ClassInformer             storageinformers.StorageClassInformer
+-EventRecorder             record.EventRecorder
+-EnableDynamicProvisioning bool
+}
+
+PersistentVolumeController ..> listers.core.PersistentVolumeLister
+PersistentVolumeController ..> listers.core.PersistentVolumeClaimLister
+PersistentVolumeController ..> listers.storage.PersistentVolumeLister
+PersistentVolumeController ..> cache.InformerSynced
+PersistentVolumeController ..> cloudprovider.Interface
+PersistentVolumeController ..> volume.VolumePluginMgr
+PersistentVolumeController ..> ControllerParameters
+

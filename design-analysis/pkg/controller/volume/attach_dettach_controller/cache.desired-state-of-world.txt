@@ -1,0 +1,62 @@
+@startuml
+
+interface DesiredStateOfWorld
+
+DesiredStateOfWorld : AddNode(nodeName k8stypes.NodeName, keepTerminatedPodVolumes bool)
+DesiredStateOfWorld : AddPod(podName types.UniquePodName, pod *v1.Pod, volumeSpec *volume.Spec, nodeName k8stypes.NodeName) (v1.UniqueVolumeName, error)
+DesiredStateOfWorld : DeleteNode(nodeName k8stypes.NodeName) error
+DesiredStateOfWorld : DeletePod(podName types.UniquePodName, volumeName v1.UniqueVolumeName, nodeName k8stypes.NodeName)
+DesiredStateOfWorld : NodeExists(nodeName k8stypes.NodeName) bool
+DesiredStateOfWorld : VolumeExists(volumeName v1.UniqueVolumeName, nodeName k8stypes.NodeName) bool
+DesiredStateOfWorld : GetVolumesToAttach() []VolumeToAttach
+DesiredStateOfWorld : GetPodToAdd() map[types.UniquePodName]PodToAdd
+DesiredStateOfWorld : GetKeepTerminatedPodVolumesForNode(k8stypes.NodeName) bool
+
+class desiredStateOfWorld{
+-nodesManaged map[k8stypes.NodeName]nodeManaged
+-volumePluginMgr *volume.VolumePluginMgr
++AddNode(nodeName k8stypes.NodeName, keepTerminatedPodVolumes bool)
++AddPod(podName types.UniquePodName, pod *v1.Pod, volumeSpec *volume.Spec, nodeName k8stypes.NodeName) (v1.UniqueVolumeName, error)
++DeleteNode(nodeName k8stypes.NodeName) error
++DeletePod(podName types.UniquePodName, volumeName v1.UniqueVolumeName, nodeName k8stypes.NodeName)
++NodeExists(nodeName k8stypes.NodeName) bool
++VolumeExists(volumeName v1.UniqueVolumeName, nodeName k8stypes.NodeName) bool
++GetVolumesToAttach() []VolumeToAttach
++GetPodToAdd() map[types.UniquePodName]PodToAdd
++GetKeepTerminatedPodVolumesForNode(k8stypes.NodeName) bool
+
+}
+
+DesiredStateOfWorld <|- desiredStateOfWorld
+
+desiredStateOfWorld o-- sync.RWMutex
+
+class VolumeToAttach
+
+VolumeToAttach o-- operationexecutor.VolumeToAttach
+
+desiredStateOfWorld ..> VolumeToAttach
+
+class nodeManaged{
+-nodeName k8stypes.NodeName
+-volumesToAttach map[v1.UniqueVolumeName]volumeToAttach
+-keepTerminatedPodVolumes bool
+}
+
+desiredStateOfWorld ..> nodeManaged
+
+class volumeToAttach{
+-multiAttachErrorReported bool
+-volumeName v1.UniqueVolumeName
+-spec *volume.Spec
+-scheduledPods map[types.UniquePodName]pod
+}
+
+nodeManaged ..> volumeToAttach
+
+class pod{
+-podName types.UniquePodName
+-podObj *v1.Pod
+}
+
+volumeToAttach ..> pod

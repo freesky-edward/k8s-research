@@ -1,0 +1,21 @@
+@startuml
+
+class VolumeConfigFlags{
+-PersistentVolumeRecyclerMaximumRetry                int
+-PersistentVolumeRecyclerMinimumTimeoutNFS           int
+-PersistentVolumeRecyclerPodTemplateFilePathNFS      string
+-PersistentVolumeRecyclerIncrementTimeoutNFS         int
+-PersistentVolumeRecyclerPodTemplateFilePathHostPath string
+-PersistentVolumeRecyclerMinimumTimeoutHostPath      int
+-PersistentVolumeRecyclerIncrementTimeoutHostPath    int
+-EnableHostPathProvisioning                          bool
+-EnableDynamicProvisioning                           bool
+}
+
+class PersistentVolumeControllerOptions{
+-PVClaimBinderSyncPeriod time.Duration
+-VolumeConfigFlags       VolumeConfigFlags
++AddFlags(fs *pflag.FlagSet)
+}
+
+PersistentVolumeControllerOptions "1" *- "1" VolumeConfigFlags

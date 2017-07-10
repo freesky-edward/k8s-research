@@ -1,0 +1,30 @@
+@startuml
+interface Reconciler{
+Run(stopCh <-chan struct{})
+}
+
+class reconciler{
+-loopPeriod                time.Duration
+-maxWaitForUnmountDuration time.Duration
+-syncDuration              time.Duration
+-desiredStateOfWorld       cache.DesiredStateOfWorld
+-actualStateOfWorld        cache.ActualStateOfWorld
+-attacherDetacher          operationexecutor.OperationExecutor
+-nodeStatusUpdater         statusupdater.NodeStatusUpdater
+-timeOfLastSync            time.Time
+-disableReconciliationSync bool
+-recorder                  record.EventRecorder
++Run(stopCh <-chan struct{})
+-reconciliationLoopFunc() func()
+-sync()
+-updateSyncTime()
+-syncStates()
+-isMultiAttachForbidden(volumeSpec *volume.Spec) bool
+-reconcile()
+}
+
+reconciler -|> Reconciler
+
+reconciler ..> cache.DesiredStateOfWorld
+reconciler ..> cache.ActualStateOfWorld
+reconciler ..> operationexecutor.OperationExecutor

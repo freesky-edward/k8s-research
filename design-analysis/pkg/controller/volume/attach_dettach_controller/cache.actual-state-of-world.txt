@@ -1,0 +1,83 @@
+@startuml
+interface ActualStateOfWorld
+
+ActualStateOfWorld : AddVolumeNode(uniqueName v1.UniqueVolumeName, volumeSpec *volume.Spec, nodeName types.NodeName, devicePath string) (v1.UniqueVolumeName, error)
+ActualStateOfWorld : SetVolumeMountedByNode(volumeName v1.UniqueVolumeName, nodeName types.NodeName, mounted bool, forceUnmount bool) error
+ActualStateOfWorld : SetNodeStatusUpdateNeeded(nodeName types.NodeName)
+ActualStateOfWorld : ResetDetachRequestTime(volumeName v1.UniqueVolumeName, nodeName types.NodeName)
+ActualStateOfWorld : SetDetachRequestTime(volumeName v1.UniqueVolumeName, nodeName types.NodeName) (time.Duration, error)
+ActualStateOfWorld : DeleteVolumeNode(volumeName v1.UniqueVolumeName, nodeName types.NodeName)
+ActualStateOfWorld : VolumeNodeExists(volumeName v1.UniqueVolumeName, nodeName types.NodeName) bool
+ActualStateOfWorld : GetAttachedVolumes() []AttachedVolume
+ActualStateOfWorld : GetAttachedVolumesForNode(nodeName types.NodeName) []AttachedVolume
+ActualStateOfWorld : GetAttachedVolumesPerNode() map[types.NodeName][]operationexecutor.AttachedVolume
+ActualStateOfWorld : GetNodesForVolume(volumeName v1.UniqueVolumeName) []types.NodeName
+ActualStateOfWorld : GetVolumesToReportAttached() map[types.NodeName][]v1.AttachedVolume
+ActualStateOfWorld : GetNodesToUpdateStatusFor() map[types.NodeName]nodeToUpdateStatusFor
+ActualStateOfWorld : RemoveNodeFromAttachUpdates(nodeName types.NodeName) error
+
+ActualStateOfWorld o-- operationexecutor.ActualStateOfWorldAttacherUpdater
+
+class AttachedVolume{
+-MountedByNode bool
+-DetachRequestedTime time.Time
+}
+
+AttachedVolume o-- operationexecutor.AttachedVolume
+ActualStateOfWorld ..> AttachedVolume
+
+class actualStateOfWorld {
+-attachedVolumes map[v1.UniqueVolumeName]attachedVolume
+-nodesToUpdateStatusFor map[types.NodeName]nodeToUpdateStatusFor
+-volumePluginMgr *volume.VolumePluginMgr
++MarkVolumeAsAttached(uniqueName v1.UniqueVolumeName, volumeSpec *volume.Spec, nodeName types.NodeName, devicePath string)
++MarkVolumeAsDetached(volumeName v1.UniqueVolumeName, nodeName types.NodeName)
++RemoveVolumeFromReportAsAttached(volumeName v1.UniqueVolumeName, nodeName types.NodeName)
++AddVolumeToReportAsAttached(volumeName v1.UniqueVolumeName, nodeName types.NodeName)
++RemoveNodeFromAttachUpdates(nodeName types.NodeName) error
++AddVolumeNode(uniqueName v1.UniqueVolumeName, volumeSpec *volume.Spec, nodeName types.NodeName, devicePath string) (v1.UniqueVolumeName, error)
++SetVolumeMountedByNode(volumeName v1.UniqueVolumeName, nodeName types.NodeName, mounted bool, forceUnmount bool) error
++ResetDetachRequestTime(volumeName v1.UniqueVolumeName, nodeName types.NodeName)
++SetDetachRequestTime(volumeName v1.UniqueVolumeName, nodeName types.NodeName) (time.Duration, error)
+-getNodeAndVolume(volumeName v1.UniqueVolumeName, nodeName types.NodeName) (attachedVolume, nodeAttachedTo, error)
+-removeVolumeFromReportAsAttached(volumeName v1.UniqueVolumeName, nodeName types.NodeName) error
+-addVolumeToReportAsAttached(volumeName v1.UniqueVolumeName, nodeName types.NodeName)
+-updateNodeStatusUpdateNeeded(nodeName types.NodeName, needed bool) error
++SetNodeStatusUpdateNeeded(nodeName types.NodeName)
++DeleteVolumeNode(volumeName v1.UniqueVolumeName, nodeName types.NodeName)
++VolumeNodeExists(volumeName v1.UniqueVolumeName, nodeName types.NodeName) bool
++GetAttachedVolumes() []AttachedVolume
++GetAttachedVolumesForNode(nodeName types.NodeName) []AttachedVolume
++GetAttachedVolumesPerNode() map[types.NodeName][]operationexecutor.AttachedVolume
++GetNodesForVolume(volumeName v1.UniqueVolumeName) []types.NodeName
++GetVolumesToReportAttached() map[types.NodeName][]v1.AttachedVolume
++GetNodesToUpdateStatusFor() map[types.NodeName]nodeToUpdateStatusFor
+-getAttachedVolume(attachedVolume *attachedVolume,nodeAttachedTo *nodeAttachedTo) AttachedVolume
+}
+
+actualStateOfWorld o-- sync.RWMutex
+actualStateOfWorld -|> ActualStateOfWorld
+
+class attachedVolume {
+-volumeName v1.UniqueVolumeName
+-spec *volume.Spec
+-nodesAttachedTo map[types.NodeName]nodeAttachedTo
+-devicePath string
+}
+
+actualStateOfWorld "1" *-  "*" attachedVolume
+
+class nodeAttachedTo{
+-nodeName types.NodeName
+-mountedByNode bool
+-mountedByNodeSetCount uint
+-detachRequestedTime time.Time
+}
+
+attachedVolume "1" *- "*" nodeAttachedTo
+
+class nodeToUpdateStatusFor{
+-nodeName types.NodeName
+-statusUpdateNeeded bool
+-volumesToReportAsAttached map[v1.UniqueVolumeName]v1.UniqueVolumeName
+}

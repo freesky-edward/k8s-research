@@ -1,0 +1,21 @@
+@startuml
+
+class persistentVolumeOrderedIndex{
+-store cache.Indexer
++listByAccessModes(modes []v1.PersistentVolumeAccessMode) ([]*v1.PersistentVolume, error)
++findByClaim(claim *v1.PersistentVolumeClaim) (*v1.PersistentVolume, error)
++findBestMatchForClaim(claim *v1.PersistentVolumeClaim) (*v1.PersistentVolume, error)
++allPossibleMatchingAccessModes(requestedModes []v1.PersistentVolumeAccessMode) [][]v1.PersistentVolumeAccessMode
+
+}
+
+persistentVolumeOrderedIndex "1" -- "1" cache.Indexer
+
+class byAccessModes{
+-modes [][]v1.PersistentVolumeAccessMode
++Less(i, j int) bool
++Swap(i, j int)
++Len() int
+}
+
+byAccessModes "1" *- "*" v1.PersistentVolumeAccessMode
