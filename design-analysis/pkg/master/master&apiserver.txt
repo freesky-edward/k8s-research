@@ -1,0 +1,78 @@
+@startuml
+
+
+class Config{
+-GenericConfig *genericapiserver.Config
+
+-ClientCARegistrationHook ClientCARegistrationHook
+
+-APIResourceConfigSource  serverstorage.APIResourceConfigSource
+-StorageFactory           serverstorage.StorageFactory
+-EnableCoreControllers    bool
+-EndpointReconcilerConfig EndpointReconcilerConfig
+-EventTTL                 time.Duration
+-KubeletClientConfig      kubeletclient.KubeletClientConfig
+
+-Tunneler          tunneler.Tunneler
+-EnableUISupport   bool
+-EnableLogsSupport bool
+-ProxyTransport    http.RoundTripper
+-ServiceIPRange net.IPNet
+	
+-APIServerServiceIP net.IP
+	
+-APIServerServicePort int
+
+-ServiceNodePortRange utilnet.PortRange
+
+-ExtraServicePorts []api.ServicePort
+
+-ExtraEndpointPorts []api.EndpointPort
+
+-KubernetesServiceNodePort int
+
+-MasterCount int
+
++Complete() completedConfig
++SkipComplete() completedConfig
+
++NewBootstrapController(legacyRESTStorage corerest.LegacyRESTStorage, 
+serviceClient coreclient.ServicesGetter, nsClient coreclient.NamespacesGetter) *Controller
+
+}
+
+class EndpointReconcilerConfig {
+-	Reconciler EndpointReconciler
+-	Interval   time.Duration
+}
+
+Config o-- EndpointReconcilerConfig
+
+class Master {
+-GenericAPIServer *genericapiserver.GenericAPIServer
+-ClientCARegistrationHook ClientCARegistrationHook
+
++InstallLegacyAPI(c *Config, restOptionsGetter generic.RESTOptionsGetter, 
+legacyRESTStorageProvider corerest.LegacyRESTStorageProvider)
+-installTunneler(nodeTunneler tunneler.Tunneler, nodeClient corev1client.NodeInterface)
++InstallAPIs(apiResourceConfigSource serverstorage.APIResourceConfigSource, 
+restOptionsGetter generic.RESTOptionsGetter, restStorageProviders ...RESTStorageProvider)
+
+}
+
+class completedConfig{
++New(delegationTarget genericapiserver.DelegationTarget, 
+crdRESTOptionsGetter genericregistry.RESTOptionsGetter) (*Master, error)
+}
+
+
+completedConfig o-- Config
+Config ..> completedConfig : Completed()
+
+completedConfig ..>  Master : New()
+
+Config o-- genericapiserver.Config
+genericapiserver.completedConfig o--  genericapiserver.Config
+
+genericapiserver.completedConfig ..>  genericapiserver.GenericAPIServer : New()
+Master ..> genericapiserver.GenericAPIServer

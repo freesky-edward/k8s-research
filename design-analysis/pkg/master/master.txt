@@ -1,0 +1,11 @@
+* Abstract
+
+master package contains the code of how to set up and run a kubernetes cluster. which contains 1)one generic api server, 2)
+
+if you want to setup a kubernetes cluster, the steps as following may be in right way:
+
+1. build a Config instance.
+2. produce the completedConfig via Config.Complete method. the only thing will be finished is to fill the required fields with default value.
+3. a Master will get through completedConfig.New.
+
+registry package implement the interface of RESTStorageProvider, which will create the APIGroupInfo for each kind of resources such as storage, network...

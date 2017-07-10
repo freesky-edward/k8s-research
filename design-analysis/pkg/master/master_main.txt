@@ -1,0 +1,167 @@
+@startuml
+
+
+class Config{
+-GenericConfig *genericapiserver.Config
+
+-ClientCARegistrationHook ClientCARegistrationHook
+
+-APIResourceConfigSource  serverstorage.APIResourceConfigSource
+-StorageFactory           serverstorage.StorageFactory
+-EnableCoreControllers    bool
+-EndpointReconcilerConfig EndpointReconcilerConfig
+-EventTTL                 time.Duration
+-KubeletClientConfig      kubeletclient.KubeletClientConfig
+
+-Tunneler          tunneler.Tunneler
+-EnableUISupport   bool
+-EnableLogsSupport bool
+-ProxyTransport    http.RoundTripper
+-ServiceIPRange net.IPNet
+	
+-APIServerServiceIP net.IP
+	
+-APIServerServicePort int
+
+-ServiceNodePortRange utilnet.PortRange
+
+-ExtraServicePorts []api.ServicePort
+
+-ExtraEndpointPorts []api.EndpointPort
+
+-KubernetesServiceNodePort int
+
+-MasterCount int
+
++Complete() completedConfig
++SkipComplete() completedConfig
+
++NewBootstrapController(legacyRESTStorage corerest.LegacyRESTStorage, 
+serviceClient coreclient.ServicesGetter, nsClient coreclient.NamespacesGetter) *Controller
+
+}
+
+class EndpointReconcilerConfig {
+-	Reconciler EndpointReconciler
+-	Interval   time.Duration
+}
+
+Config o-- EndpointReconcilerConfig
+
+class Master {
+-GenericAPIServer *genericapiserver.GenericAPIServer
+-ClientCARegistrationHook ClientCARegistrationHook
+
++InstallLegacyAPI(c *Config, restOptionsGetter generic.RESTOptionsGetter, 
+legacyRESTStorageProvider corerest.LegacyRESTStorageProvider)
+-installTunneler(nodeTunneler tunneler.Tunneler, nodeClient corev1client.NodeInterface)
++InstallAPIs(apiResourceConfigSource serverstorage.APIResourceConfigSource, 
+restOptionsGetter generic.RESTOptionsGetter, restStorageProviders ...RESTStorageProvider)
+
+}
+
+class completedConfig{
++New(delegationTarget genericapiserver.DelegationTarget, 
+crdRESTOptionsGetter genericregistry.RESTOptionsGetter) (*Master, error)
+}
+
+completedConfig o-- Config
+
+interface RESTStorageProvider{
+GroupName() string
+NewRESTStorage(apiResourceConfigSource 
+serverstorage.APIResourceConfigSource, 
+restOptionsGetter generic.RESTOptionsGetter) 
+(genericapiserver.APIGroupInfo, bool)
+}
+
+class nodeAddressProvider{
+-nodeClient corev1client.NodeInterface
++externalAddresses() ([]string, error)
+}
+
+completedConfig ..> Master
+Master ..> nodeAddressProvider
+Master ..> RESTStorageProvider
+
+Config ..> Controller
+
+class Controller{
+-ServiceClient   coreclient.ServicesGetter
+-NamespaceClient coreclient.NamespacesGetter
+
+-ServiceClusterIPRegistry rangeallocation.RangeRegistry
+-ServiceClusterIPInterval time.Duration
+-ServiceClusterIPRange    net.IPNet
+
+-ServiceNodePortRegistry rangeallocation.RangeRegistry
+-ServiceNodePortInterval time.Duration
+-ServiceNodePortRange    utilnet.PortRange
+
+-EndpointReconciler EndpointReconciler
+-EndpointInterval   time.Duration
+
+-SystemNamespaces         []string
+-SystemNamespacesInterval time.Duration
+
+-PublicIP net.IP
+
+-ServiceIP                 net.IP
+-ServicePort               int
+-ExtraServicePorts         []api.ServicePort
+-ExtraEndpointPorts        []api.EndpointPort
+-PublicServicePort         int
+-KubernetesServiceNodePort int
+-runner *async.Runner
+
++PostStartHook(hookContext genericapiserver.PostStartHookContext)
+error
++Start()
++RunKubernetesNamespaces(ch chan struct{})
++RunKubernetesService(ch chan struct{})
++UpdateKubernetesService(reconcile bool) error
++CreateNamespaceIfNeeded(ns string) error
++CreateOrUpdateMasterServiceIfNeeded(serviceName string, 
+serviceIP net.IP, servicePorts []api.ServicePort,
+serviceType api.ServiceType, reconcile bool) error
+}
+
+interface EndpointReconciler{
+ReconcileEndpoints(serviceName string, ip net.IP, 
+endpointPorts []api.EndpointPort, reconcilePorts bool) error
+}
+
+EndpointReconcilerConfig o-- EndpointReconciler
+
+class masterCountEndpointReconciler{
+-masterCount    int
+-endpointClient coreclient.EndpointsGetter
+
++ReconcileEndpoints(serviceName string, ip net.IP, 
+endpointPorts []api.EndpointPort, reconcilePorts bool) error
+
+}
+
+masterCountEndpointReconciler -|> EndpointReconciler
+Controller o-- EndpointReconciler
+
+class ClientCARegistrationHook{
+-ClientCA []byte
+
+-RequestHeaderUsernameHeaders     []string
+-RequestHeaderGroupHeaders        []string
+-RequestHeaderExtraHeaderPrefixes []string
+-RequestHeaderCA                  []byte
+-RequestHeaderAllowedNames        []string
+
++PostStartHook(hookContext genericapiserver.PostStartHookContext) error
++tryToWriteClientCAs(client coreclient.CoreInterface) (bool, error)
+}
+
+Config o-- ClientCARegistrationHook
+Master o-- ClientCARegistrationHook
+
+Config o-- tuneler.Tunneler
+'Master ..> tuneler.Tunneler
+Master o-- genericapiserver.GenericAPIServer
+'Master ..> thirdparty.ThirdPartyResourceServer

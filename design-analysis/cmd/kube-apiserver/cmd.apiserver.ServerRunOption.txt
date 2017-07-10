@@ -1,0 +1,35 @@
+@startuml
+
+class ServerRunOptions{
+-GenericServerRunOptions *genericoptions.ServerRunOptions
+-Etcd                    *genericoptions.EtcdOptions
+-SecureServing           *genericoptions.SecureServingOptions
+-InsecureServing         *kubeoptions.InsecureServingOptions
+-Audit                   *genericoptions.AuditOptions
+-Features                *genericoptions.FeatureOptions
+-Admission               *genericoptions.AdmissionOptions
+-Authentication          *kubeoptions.BuiltInAuthenticationOptions
+-Authorization           *kubeoptions.BuiltInAuthorizationOptions
+-CloudProvider           *kubeoptions.CloudProviderOptions
+-StorageSerialization    *kubeoptions.StorageSerializationOptions
+-APIEnablement           *kubeoptions.APIEnablementOptions
+
+-AllowPrivileged           bool
+-EnableLogsHandler         bool
+-EventTTL                  time.Duration
+-KubeletConfig             kubeletclient.KubeletClientConfig
+-KubernetesServiceNodePort int
+-MasterCount               int
+-MaxConnectionBytesPerSec  int64
+-ServiceClusterIPRange     net.IPNet 
+-ServiceNodePortRange      utilnet.PortRange
+-SSHKeyfile                string
+-SSHUser                   string
+
+-ProxyClientCertFile string
+-ProxyClientKeyFile  string
+
+-EnableAggregatorRouting bool
+
++AddFlags(fs *pflag.FlagSet)
+}

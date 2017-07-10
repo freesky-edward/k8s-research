@@ -1,0 +1,48 @@
+@startuml
+
+class Master {
+-GenericAPIServer *genericapiserver.GenericAPIServer
+-ClientCARegistrationHook ClientCARegistrationHook
+
++InstallLegacyAPI(c *Config, restOptionsGetter generic.RESTOptionsGetter, 
+legacyRESTStorageProvider corerest.LegacyRESTStorageProvider)
+-installTunneler(nodeTunneler tunneler.Tunneler, nodeClient corev1client.NodeInterface)
++InstallAPIs(apiResourceConfigSource serverstorage.APIResourceConfigSource, 
+restOptionsGetter generic.RESTOptionsGetter, restStorageProviders ...RESTStorageProvider)
+
+}
+
+class completedConfig{
++New(delegationTarget genericapiserver.DelegationTarget, 
+crdRESTOptionsGetter genericregistry.RESTOptionsGetter) (*Master, error)
+}
+
+interface RESTStorageProvider{
+GroupName() string
+NewRESTStorage(apiResourceConfigSource serverstorage.APIResourceConfigSource, 
+restOptionsGetter generic.RESTOptionsGetter) (genericapiserver.APIGroupInfo, bool)
+}
+
+Master ..> RESTStorageProvider:installAPIs
+completedConfig ..>  Master : New()
+completedConfig ..> RESTStorageProvider:create instances
+
+class registry.authentication.rest.RESTStorageProvider{
+-Authenticator authenticator.Request
++GroupName() string
++NewRESTStorage(apiResourceConfigSource serverstorage.APIResourceConfigSource,
+restOptionsGetter generic.RESTOptionsGetter) (genericapiserver.APIGroupInfo, bool)
+-v1beta1Storage(apiResourceConfigSource serverstorage.APIResourceConfigSource,
+restOptionsGetter generic.RESTOptionsGetter) map[string]rest.Storage
+-v1Storage(apiResourceConfigSource serverstorage.APIResourceConfigSource, 
+restOptionsGetter generic.RESTOptionsGetter) map[string]rest.Storage
+}
+
+registry.authentication.rest.RESTStorageProvider -|> RESTStorageProvider
+
+class registry.storage.rest.RESTStorageProvider{
++NewRESTStorage(apiResourceConfigSource serverstorage.APIResourceConfigSource,
+restOptionsGetter generic.RESTOptionsGetter) (genericapiserver.APIGroupInfo, bool)
+}
+
+registry.storage.rest.RESTStorageProvider -|> RESTStorageProvider
