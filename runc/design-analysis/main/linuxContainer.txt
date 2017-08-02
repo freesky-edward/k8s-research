@@ -1,0 +1,76 @@
+main.CreateCMD --> main.util_linux.startContainer
+
+interface BaseContainer{
+    ID() string
+	Status() (Status, error)
+	State() (*State, error)
+	Config() configs.Config
+	Processes() ([]int, error)
+	Stats() (*Stats, error)
+	Set(config configs.Config) error
+	Start(process *Process) (err error)
+	Run(process *Process) (err error)
+	Destroy() error
+	Signal(s os.Signal, all bool) error
+	Exec() error
+}
+
+interface Container{
+    Checkpoint(criuOpts *CriuOpts) error
+	Restore(process *Process, criuOpts *CriuOpts) error
+	Pause() error
+	Resume() error
+	NotifyOOM() (<-chan struct{}, error)
+	NotifyMemoryPressure(level PressureLevel) (<-chan struct{}, error)
+}
+
+Container --|> BaseContainer
+
+class linuxContainer{
+    id                   string
+	root                 string
+	config               *configs.Config
+	cgroupManager        cgroups.Manager
+	initArgs             []string
+	initProcess          parentProcess
+	initProcessStartTime uint64
+	criuPath             string
+	m                    sync.Mutex
+	criuVersion          int
+	state                containerState
+	created              time.Time
+}
+
+class BaseState{
+    ID string `json:"id"`
+    InitProcessPid int `json:"init_process_pid"`
+    InitProcessStartTime uint64 `json:"init_process_start"`
+    Created time.Time `json:"created"`
+    Config configs.Config `json:"config"`
+}
+
+class State{
+    Rootless bool `json:"rootless"`
+	CgroupPaths map[string]string `json:"cgroup_paths"`
+	NamespacePaths map[configs.NamespaceType]string `json:"namespace_paths"`
+	ExternalDescriptors []string `json:"external_descriptors,omitempty"`
+}
+
+linuxContainer --|> Container
+linuxContainer ..> State
+State --|> BaseState
+
+class LinuxFactory{
+	Root string
+	InitArgs []string
+	CriuPath string
+	Validator validate.Validator
+	NewCgroupsManager func(config *configs.Cgroup, paths map[string]string) cgroups.Manager
+	Create(id string, config *configs.Config) (Container, error) 
+	Load(id string) (Container, error)
+	StartInitialization() (err error) 
+	loadState(root, id string) (*State, error)
+	validateID(id string) error
+}
+
+LinuxFactory ..> linuxContainer
